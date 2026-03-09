@@ -27,7 +27,7 @@ public class Sensor
           signalStrength = 0;
 
         //Prints signal strength
-        system.out.println(signalStrength);
+        System.out.println(signalStrength);
       }
 
       

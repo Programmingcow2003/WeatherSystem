@@ -10,7 +10,7 @@ public class Sensor
       double signalStrength = rand.nextDouble() * 10;
 
       //Tests signal a few time
-      System.out.println(singalStrength);
+      System.out.println(signalStrength);
 
       
     }

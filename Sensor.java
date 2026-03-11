@@ -36,7 +36,7 @@ public class Sensor
         failed_odds = random.nextInt(1, 11);
 
         if(failed_odds == 10)
-          System.out.println("Previous signal failed to send, resending ", signalStrength);
+          System.out.println("Previous signal failed to send, resending " + signalStrength);
       }
 
       //Some things such as adding the wrapper and controlling pipeline are a bit early to be adding at this stage

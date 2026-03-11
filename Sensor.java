@@ -11,11 +11,14 @@ public class Sensor
       double signalStrength = rand.nextDouble() * 10;
       
 
-      //This will eventually be continuous but want it to run through
+      //This will eventually be continuous but want it to finish so it can pass the tests
       for(int i = 0; i < 100; i++)
       {
 
-        //Signal can change between -0.5.0.5
+        //This will simulate retransmission will be implemented for real when applicable
+        bool failed_odds = 0;
+
+        //Signal can change between -0.5.0.5 per iteration
         double change = - 0.5 + rand.nextDouble();
         signalStrength += change;
 
@@ -28,7 +31,16 @@ public class Sensor
 
         //Prints signal strength
         System.out.println(signalStrength);
+
+        //Random chance of it failing to send
+        failed_odds = random.nextInt(1, 11);
+
+        if(failed_odds == 10)
+          System.out.println("Previous signal failed to send, resending ", signalStrength);
       }
+
+      //Some things such as adding the wrapper and controlling pipeline are a bit early to be adding at this stage
+      //These details will become implemented when applicable
 
       
     }

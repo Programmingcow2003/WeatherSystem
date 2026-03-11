@@ -33,7 +33,7 @@ public class Sensor
         System.out.println(signalStrength);
 
         //Random chance of it failing to send
-        failed_odds = random.nextInt(1, 11);
+        failed_odds = rand.nextInt(1, 11);
 
         if(failed_odds == 10)
           System.out.println("Previous signal failed to send, resending " + signalStrength);

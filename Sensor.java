@@ -16,7 +16,7 @@ public class Sensor
       {
 
         //This will simulate retransmission will be implemented for real when applicable
-        bool failed_odds = 0;
+        int failed_odds = 0;
 
         //Signal can change between -0.5.0.5 per iteration
         double change = - 0.5 + rand.nextDouble();

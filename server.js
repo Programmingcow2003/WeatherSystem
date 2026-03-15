@@ -1,18 +1,24 @@
-const express = require("express");
-const sampleData = require("./sampler");
+const http = require('http');
+const sampleData = require('./sampler');
 
-const app = express();
-app.use(express.json());
+http.createServer((req, res) => {
+  if (req.method === 'POST' && req.url === '/sample') {
+    let body = '';
 
-app.post("/sample", (req, res) => {
-  const data = req.body.data;
-  const sampleSize = req.body.sampleSize;
+    req.on('data', chunk => body += chunk);
 
-  const sample = sampleData(data, sampleSize);
+    req.on('end', () => {
+      const data = JSON.parse(body);
 
-  res.json({ sample });
-});
+      const sample = sampleData(data.voltage, data.amount);
 
-app.listen(3000, () => {
-  console.log("Server running on port 3000");
-});
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        status: "received",
+        sample: sample
+      }));
+    });
+  }
+}).listen(3000);
+
+console.log("Server running on http://localhost:3000");

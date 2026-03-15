@@ -1,4 +1,5 @@
 const express = require("express");
+const sampleData = require("./sampler");
 
 const app = express();
 app.use(express.json());
@@ -7,7 +8,7 @@ app.post("/sample", (req, res) => {
   const data = req.body.data;
   const sampleSize = req.body.sampleSize;
 
-  const sample = data.slice(0, sampleSize);
+  const sample = sampleData(data, sampleSize);
 
   res.json({ sample });
 });

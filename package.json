@@ -1,0 +1,9 @@
+{
+  "name": "sampler-project",
+  "version": "1.0.0",
+  "description": "Simple sampler API",
+  "main": "server.js",
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}

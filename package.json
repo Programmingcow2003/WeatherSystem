@@ -1,9 +1,11 @@
 {
+  "name": "weather-system",
+  "version": "1.0.0",
   "scripts": {
     "test": "jest"
   },
   "devDependencies": {
-    "jest": "^...",
-    "supertest": "^..."
+    "jest": "^29.7.0",
+    "supertest": "^6.3.4"
   }
 }

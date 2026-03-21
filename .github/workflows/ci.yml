@@ -1,29 +1,44 @@
-name: Simple CI
+name: CI Pipeline
 
 on:
   push:
   pull_request:
 
 jobs:
-  build:
+  build-and-test:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check out repository
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Node
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: "20"
 
-      - name: Install dependencies
+      - name: Install Node dependencies
         run: npm install
 
-      - name: Check JavaScript syntax
-        run: |
-          node --check server.js
-          node --check sampler.js
-
-      - name: Run tests
+      - name: Run Sampler tests
         run: npm test
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run Transformer tests
+        run: pytest
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Compile Sensor
+        run: javac Sensor.java

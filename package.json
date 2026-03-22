@@ -2,7 +2,7 @@
   "name": "weather-system",
   "version": "1.0.0",
   "scripts": {
-    "test": "jest"
+    "test": "node ./node_modules/jest/bin/jest.js"
   },
   "devDependencies": {
     "jest": "^29.7.0",

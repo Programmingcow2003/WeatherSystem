@@ -6,7 +6,7 @@
   "type": "commonjs",
   "scripts": {
     "start": "node server.js",
-    "test": "jest"
+    "test": "npx jest"
   },
   "dependencies": {
     "pg": "^8.11.5"

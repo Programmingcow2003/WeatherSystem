@@ -18,10 +18,13 @@ jobs:
           node-version: "20"
 
       - name: Install Node dependencies
-        run: npm install
+        run: npm ci
+
+      - name: Fix Jest permissions
+        run: chmod +x node_modules/.bin/jest || true
 
       - name: Run Sampler tests
-        run: npm test
+        run: node ./node_modules/jest/bin/jest.js
 
       - name: Set up Python
         uses: actions/setup-python@v5

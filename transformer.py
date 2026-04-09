@@ -1,5 +1,6 @@
 # transformer.py
 from flask import Flask, request, jsonify
+import requests
 
 app = Flask(__name__)
 
@@ -20,6 +21,13 @@ def transform():
         return jsonify({"error": "Voltage must be numeric"}), 400
 
     temperature = voltage_to_temperature(voltage)
+    requests.post(
+    "http://localhost:3000/temperature",
+    json={
+        "temperature": temperature,
+        "timestamp": "2026-03-10T14:20:00Z"
+    }
+)
 
     return jsonify({
         "status": "transformed",

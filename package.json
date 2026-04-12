@@ -1,8 +1,14 @@
 {
   "name": "weather-system",
   "version": "1.0.0",
+  "description": "Weather system pipeline",
+  "main": "server.js",
   "scripts": {
-    "test": "jest"
+    "start": "node server.js",
+    "test": "node ./node_modules/jest/bin/jest.js"
+  },
+  "dependencies": {
+    "pg": "^8.11.5"
   },
   "devDependencies": {
     "jest": "^29.7.0",

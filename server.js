@@ -3,12 +3,32 @@ const https = require("https");
 const sampleData = require("./sampler");
 const db = require("./db");
 
-// Send one sampled voltage value to the Python Transformer
-function sendToTransformer(voltage) {
-  return new Promise((resolve, reject) => {
-    const data = JSON.stringify({ voltage });
+function reply(res, code, data) {
+  res.writeHead(code, { "Content-Type": "application/json" });
+  res.end(JSON.stringify(data));
+}
 
-    const options = {
+function readJson(req, done) {
+  let body = "";
+
+  req.on("data", chunk => {
+    body += chunk;
+  });
+
+  req.on("end", () => {
+    try {
+      done(null, JSON.parse(body || "{}"));
+    } catch {
+      done("Invalid JSON");
+    }
+  });
+}
+
+function sendToTransformer(voltage, done) {
+  const data = JSON.stringify({ voltage });
+
+  const req = https.request(
+    {
       hostname: "127.0.0.1",
       port: 5000,
       path: "/transform",
@@ -18,149 +38,101 @@ function sendToTransformer(voltage) {
         "Content-Type": "application/json",
         "Content-Length": Buffer.byteLength(data)
       }
-    };
-
-    const req = https.request(options, (res) => {
+    },
+    (res) => {
       let body = "";
 
-      res.on("data", (chunk) => {
+      res.on("data", chunk => {
         body += chunk;
       });
 
       res.on("end", () => {
         try {
-          const parsed = JSON.parse(body);
-          resolve(parsed);
-        } catch (err) {
-          reject(new Error("Invalid response from Transformer: " + body));
+          done(null, JSON.parse(body));
+        } catch {
+          done("Bad transformer response");
         }
       });
-    });
+    }
+  );
 
-    req.on("error", (err) => {
-      reject(err);
-    });
-
-    req.write(data);
-    req.end();
-  });
+  req.on("error", err => done(err.message));
+  req.write(data);
+  req.end();
 }
 
-function readBody(req) {
-  return new Promise((resolve, reject) => {
-    let body = "";
-
-    req.on("data", (chunk) => {
-      body += chunk;
-    });
-
-    req.on("end", () => {
-      try {
-        resolve(JSON.parse(body || "{}"));
-      } catch (err) {
-        reject(new Error("Invalid JSON"));
-      }
-    });
-
-    req.on("error", (err) => {
-      reject(err);
-    });
-  });
-}
-
-const server = http.createServer(async (req, res) => {
-  // Sensor -> Sampler
+const server = http.createServer((req, res) => {
   if (req.method === "POST" && req.url === "/sample") {
-    try {
-      const data = await readBody(req);
-
+    readJson(req, (err, data) => {
+      if (err) return reply(res, 400, { error: err });
       if (!Array.isArray(data.voltage) || typeof data.amount !== "number") {
-        res.writeHead(400, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({
-          error: "Invalid input. Expected voltage array and numeric amount."
-        }));
-        return;
+        return reply(res, 400, { error: "Invalid input" });
       }
 
       const sample = sampleData(data.voltage, data.amount);
+      const transformed = [];
+      let finished = 0;
 
-      const transformedResults = await Promise.all(
-        sample.map((value) => sendToTransformer(value))
-      );
-
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({
-        status: "received",
-        sample: sample,
-        transformed: transformedResults
-      }));
-    } catch (error) {
-      res.writeHead(500, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({
-        error: "Server error",
-        details: error.message
-      }));
-    }
-
-    return;
-  }
-
-  // Transformer -> REST API -> Database
-  if (req.method === "POST" && req.url === "/temperature") {
-    try {
-      const data = await readBody(req);
-
-      if (typeof data.temperature !== "number" || !data.timestamp) {
-        res.writeHead(400, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({
-          error: "Expected numeric temperature and timestamp"
-        }));
-        return;
+      if (sample.length === 0) {
+        return reply(res, 200, { status: "received", sample, transformed });
       }
 
-      const result = await db.query(
+      for (let i = 0; i < sample.length; i++) {
+        sendToTransformer(sample[i], (err, result) => {
+          transformed[i] = err ? { error: err } : result;
+          finished++;
+
+          if (finished === sample.length) {
+            reply(res, 200, {
+              status: "received",
+              sample,
+              transformed
+            });
+          }
+        });
+      }
+    });
+    return;
+  }
+
+  if (req.method === "POST" && req.url === "/temperature") {
+    readJson(req, (err, data) => {
+      if (err) return reply(res, 400, { error: err });
+      if (typeof data.temperature !== "number" || !data.timestamp) {
+        return reply(res, 400, { error: "Invalid input" });
+      }
+
+      db.query(
         "INSERT INTO temperature_readings (temperature, timestamp) VALUES ($1, $2) RETURNING id",
         [data.temperature, data.timestamp]
-      );
-
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({
-        status: "stored",
-        id: result.rows[0].id
-      }));
-    } catch (error) {
-      res.writeHead(500, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({
-        error: "Database error",
-        details: error.message
-      }));
-    }
-
+      )
+        .then(result => {
+          reply(res, 200, {
+            status: "stored",
+            id: result.rows[0].id
+          });
+        })
+        .catch(err => {
+          reply(res, 500, {
+            error: "Database error",
+            details: err.message
+          });
+        });
+    });
     return;
   }
 
-  // For demo: view saved rows
   if (req.method === "GET" && req.url === "/temperature") {
-    try {
-      const result = await db.query(
-        "SELECT * FROM temperature_readings ORDER BY id DESC LIMIT 10"
-      );
-
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify(result.rows));
-    } catch (error) {
-      res.writeHead(500, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({
+    db.query("SELECT * FROM temperature_readings ORDER BY id DESC LIMIT 10")
+      .then(result => reply(res, 200, result.rows))
+      .catch(err => reply(res, 500, {
         error: "Database read error",
-        details: error.message
+        details: err.message
       }));
-    }
-
     return;
   }
 
-  res.writeHead(404, { "Content-Type": "application/json" });
-  res.end(JSON.stringify({ error: "Not found" }));
+  reply(res, 404, { error: "Not found" });
 });
 
 if (require.main === module) {
@@ -169,4 +141,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { server, sendToTransformer };
+module.exports = { server };

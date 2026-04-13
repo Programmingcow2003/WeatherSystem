@@ -6,11 +6,11 @@ services:
     container_name: weather-db
     restart: always
     environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
+      POSTGRES_USER: randomuser
+      POSTGRES_PASSWORD: 1234
       POSTGRES_DB: weather
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
